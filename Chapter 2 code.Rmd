@@ -1,0 +1,48 @@
+---
+title: "Chapter 2 code"
+output: html_notebook
+---
+
+### Chapter 2 code. Starting with section 2.7
+
+```{r}
+library(XML)
+ubase = "http://www.cherryblossom.org/"
+url = paste(ubase, "results/2012/2012cucb10m-m.htm", sep = "")
+doc = htmlParse
+
+```
+
+```{r}
+preNode = getNodeSet(doc, "//pre")
+txt = xmlValue(preNode[[1]])
+nchar(txt)
+substr(txt, 1, 50)
+substr(txt, nchar(txt)-50, nchar(txt))
+els = strsplit(txt, "\\r\\n")[[1]]
+length(els)
+```
+
+```{r}
+els[1:3]
+els[ length(els)]
+```
+
+```{r}
+extractResTable = 
+  # Retrieve data from web site, find preformatted text,
+  # return as a character vector
+
+function(url)
+{
+  doc = htmlParse(url)
+  preNode  = getNodeSet(doc, "//pre")
+  txt = xmlValue(preNode[[1]])
+  els = strsplit(txt, "\\r\\n")[[1]]
+}
+
+# Let's try our function with the 2012 Men's results
+m2012 = extractResTable(url)
+identical(m2012, els)
+```
+

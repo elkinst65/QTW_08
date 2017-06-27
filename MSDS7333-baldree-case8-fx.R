@@ -1,4 +1,76 @@
+loadCherryBlossom10KMaleResults = function() {
+  #
+  # load 10K male results from 1999 to 2012
+  #
+  ubase = "http://www.cherryblossom.org/"
+
+  menURLs = c("results/2001/oof_m.html",
+              "results/2002/oofm.htm",
+              "results/2003/CB03-M.HTM",
+              "results/2004/men.htm",
+              "results/2005/CB05-M.htm",
+              "results/2006/men.htm",
+              "results/2007/men.htm",
+              "results/2008/men.htm",
+              "results/2009/09cucb-M.htm",
+              "results/2010/2010cucb10m-m.htm",
+              "results/2011/2011cucb10m-m.htm",
+              "results/2012/2012cucb10m-m.htm")
+
+  urls = paste(ubase, menURLs, sep = "")
+  urls[1:12]
+
+  years = 2001:2012
+  # extract data from web pages
+  menTables = mapply(extractResTable, url = urls, year = years)
+  # name each table
+  names(menTables) = years
+  # print number of rows
+  sapply(menTables, length)
+
+
+  # fix 2006
+  separatorIdx = grep("^===", menTables[["2006"]])
+  separatorRow = menTables[['2006']][separatorIdx]
+  separatorRowX = paste(substring(separatorRow, 1, 63), " ",
+                        substring(separatorRow, 65, nchar(separatorRow)),
+                        sep = "")
+  menTables[['2006']][separatorIdx] = separatorRowX
+
+  # extract variables
+  menResMat = lapply(menTables, extractVariables)
+  # create a list of data frames
+  menDF = mapply(createDF, menResMat, year = years, sex = rep("M", length(years)), SIMPLIFY = FALSE)
+  # merge data frames
+  menDF = Reduce(merge.all, menDF)
+  # drop unnecessary columns
+  menDF = subset(menDF, select=-c(name, home))
+  # rename column
+  colnames(menDF)[colnames(menDF)=="runTime"] = "net"
+
+  # load 1999 data
+  # load Runners data set from statistical modeling R package
+  library(ggformula)
+  library(devtools)
+  devtools::install_github("dtkaplan/statisticalModeling")
+  library(statisticalModeling)
+  data(Runners)
+  menDF.1999 = Runners[Runners$year=="1999",]
+  # drop unnecessary columns
+  menDF.1999 = subset(menDF.1999, select=-c(start_position, previous, nruns, net))
+  # drop females
+  menDF.1999 = menDF.1999[!(menDF.1999$sex=="F"),]
+  # rename columns
+  colnames(menDF.1999)[colnames(menDF.1999)=="gun"] = "net"
+  # merge data frames
+  return(merge.all(menDF, menDF.1999))
+}
+
+
 merge.all = function(x,y){
+  #
+  # utility function to merge data frames
+  #
   merge(x, y, all=TRUE)
 }
 
@@ -8,8 +80,7 @@ extractResTable =
   # find the preformatted text,
   # and write lines or return as a character vector.
   #
-  function(url = "http://www.cherryblossom.org/results/2009/09cucb-F.htm",
-           year = 1999, sex = "male", file = NULL)
+  function(url = NULL, year = 1999, sex = "male", file = NULL)
   {
     require("XML")
     doc = htmlParse(url)
@@ -41,6 +112,9 @@ extractResTable =
   }
 
 selectCols = function(shortColNames, headerRow, searchLocs) {
+  #
+  # select columns
+  #
   sapply(shortColNames, function(shortName, headerRow, searchLocs){
     startPos = regexpr(shortName, headerRow)[[1]]
     if (startPos == -1) return( c(NA, NA) )
@@ -50,7 +124,9 @@ selectCols = function(shortColNames, headerRow, searchLocs) {
 }
 
 findColLocs = function(spacerRow) {
-
+  #
+  # find columns
+  #
   spaceLocs = gregexpr(" ", spacerRow)[[1]]
   rowLength = nchar(spacerRow)
 
@@ -85,6 +161,9 @@ extractVariables = function(file, varNames =c("name", "home", "ag", "gun", "net"
 }
 
 convertTime = function(time) {
+  #
+  # convert ##:## min:sec or ##:##:## hr:min:sec time to #.# minutes
+  #
   timePieces = strsplit(time, ":")
   timePieces = sapply(timePieces, as.numeric)
   sapply(timePieces, function(x) {

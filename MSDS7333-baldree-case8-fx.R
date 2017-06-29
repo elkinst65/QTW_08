@@ -46,7 +46,7 @@ loadCherryBlossom10KMaleResults = function() {
   # drop unnecessary columns
   menDF = subset(menDF, select=-c(name, home))
   # rename column
-  colnames(menDF)[colnames(menDF)=="runTime"] = "net"
+  colnames(menDF)[colnames(menDF)=="runTime"] = "time"
 
   # load 1999 data
   # load Runners data set from statistical modeling R package
@@ -55,15 +55,18 @@ loadCherryBlossom10KMaleResults = function() {
   devtools::install_github("dtkaplan/statisticalModeling")
   library(statisticalModeling)
   data(Runners)
-  menDF.1999 = Runners[Runners$year=="1999",]
+  menDF.1999_2000 = Runners[(Runners$year=="1999") | (Runners$year=="2000"),]
   # drop unnecessary columns
-  menDF.1999 = subset(menDF.1999, select=-c(start_position, previous, nruns, net))
+  menDF.1999_2000 = subset(menDF.1999_2000, select=-c(start_position, previous, nruns, net))
   # drop females
-  menDF.1999 = menDF.1999[!(menDF.1999$sex=="F"),]
+  menDF.1999_2000 = menDF.1999_2000[!(menDF.1999_2000$sex=="F"),]
   # rename columns
-  colnames(menDF.1999)[colnames(menDF.1999)=="gun"] = "net"
+  colnames(menDF.1999_2000)[colnames(menDF.1999_2000)=="gun"] = "time"
   # merge data frames
-  return(merge.all(menDF, menDF.1999))
+  menDF = merge.all(menDF, menDF.1999_2000)
+  # drop sex column
+  menDF = subset(menDF, select=-c(sex))
+  return(menDF)
 }
 
 
@@ -80,7 +83,7 @@ extractResTable =
   # find the preformatted text,
   # and write lines or return as a character vector.
   #
-  function(url = NULL, year = 1999, sex = "male", file = NULL)
+  function(url = NULL, year = 2001, sex = "male", file = NULL)
   {
     require("XML")
     doc = htmlParse(url)

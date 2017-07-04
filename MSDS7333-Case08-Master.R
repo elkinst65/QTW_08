@@ -1,6 +1,6 @@
 setwd(".")
 options(error = recover, digits=4)
-source(file="MSDS7333-baldree-case8-fx.r")
+source(file="MSDS7333-Case08-fx.r")
 library(lattice)
 library(gplots)
 
